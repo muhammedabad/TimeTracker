@@ -1,11 +1,17 @@
 from django import forms
 from django.contrib import admin
-from django.forms.models import BaseInlineFormSet
 from django.utils import timezone
+from unfold.admin import ModelAdmin
+from unfold.admin import TabularInline
+from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextInputWidget
 
 from api_clients.rise import RiseApiClient
 from entries.models import Entry, JiraEntry, RiseEntry
 from users.models import User
+
+
+class CustomUnfoldSelectWidget(UnfoldAdminSelectWidget):
+    pass
 
 
 class JiraEntryForm(forms.ModelForm):
@@ -13,23 +19,27 @@ class JiraEntryForm(forms.ModelForm):
         super(JiraEntryForm, self).__init__(*args, **kwargs)
 
         if self.instance.pk:
-            self.fields["jira_issue_number"] = forms.CharField(widget=forms.TextInput(attrs={'readonly': 'readonly'}))
-            self.fields["last_synced_at"] = forms.DateField(widget=forms.TextInput(attrs={'readonly': 'readonly'}))
+            self.fields["jira_issue_number"] = forms.CharField(
+                widget=UnfoldAdminTextInputWidget(attrs={'readonly': 'readonly'}))
+            self.fields["last_synced_at"] = forms.DateField(
+                widget=UnfoldAdminTextInputWidget(attrs={'readonly': 'readonly'}))
         else:
-            self.fields["last_synced_at"] = forms.DateField(widget=forms.TextInput(attrs={"disabled": "disabled"}), required=False, initial="-")
+            self.fields["last_synced_at"] = forms.DateField(
+                widget=UnfoldAdminTextInputWidget(attrs={"disabled": "disabled"}), required=False, initial="N/A")
 
     class Meta:
         model = JiraEntry
         exclude = ("jira_entry_id",)
 
 
-class JiraEntryInline(admin.TabularInline):
+class JiraEntryInline(TabularInline):
     model = JiraEntry
     form = JiraEntryForm
+    extra = 1
 
 
 class RiseInlineForm(forms.ModelForm):
-    rise_assignment_id = forms.ChoiceField(choices=[], label="RiseApp Project")
+    # rise_assignment_id = forms.ChoiceField(choices=[], label="RiseApp Project")
     rise_assignment_name = forms.CharField(widget=forms.HiddenInput(), required=False)
 
     class Meta:
@@ -46,14 +56,16 @@ class RiseInlineForm(forms.ModelForm):
 
         # Fetch data from the 3rd party API using the user's email
         if self.instance.pk:
-            # self.fields['rise_assignment_id'].initial = self.instance.rise_assignment_id
+            self.fields['rise_assignment_id'].initial = self.instance.rise_assignment_id
             self.fields["rise_assignment_name"] = forms.ChoiceField(
-                widget=forms.Select(attrs={"readonly": "readonly"}),
+                widget=CustomUnfoldSelectWidget(attrs={"readonly": "readonly"}),
                 choices=[(self.instance.rise_assignment_id, self.instance.rise_assignment_name)],
                 label="RiseApp Project"
             )
+
             self.fields['rise_assignment_id'] = forms.CharField(widget=forms.HiddenInput())
-            self.fields["last_synced_at"] = forms.DateField(widget=forms.TextInput(attrs={'readonly': 'readonly'}))
+            self.fields["last_synced_at"] = forms.DateField(
+                widget=UnfoldAdminTextInputWidget(attrs={'readonly': 'readonly'}))
 
         else:
             if user:
@@ -61,7 +73,6 @@ class RiseInlineForm(forms.ModelForm):
                 self.fields['rise_assignment_id'].choices = api_choices
                 self.fields["last_synced_at"] = forms.DateField(widget=forms.TextInput(attrs={"disabled": "disabled"}),
                                                                 required=False, initial="-")
-
 
     def get_assignments(self):
         # Get assignments for this user
@@ -93,14 +104,14 @@ class RiseInlineForm(forms.ModelForm):
         return instance
 
 
-class RiseInline(admin.TabularInline):
+class RiseInline(TabularInline):
     model = RiseEntry
     form = RiseInlineForm
 
     def get_readonly_fields(self, request, obj=None):
         readonly_fields = super(RiseInline, self).get_readonly_fields(request, obj)
         if obj:  # Check if in edit mode
-            return self.readonly_fields + ("rise_entry_id", )
+            return self.readonly_fields + ("rise_entry_id",)
         else:
             return self.readonly_fields
 
@@ -115,6 +126,7 @@ class RiseInline(admin.TabularInline):
                 # Inject the user's email into each form
                 self.user = request.user
                 super(CustomFormset, self).__init__(*args, **kwargs)
+                self.extra = 1  # Set to 0 to avoid extra empty forms
 
             def _construct_form(self, i, **kwargs):
                 # Pass the user_email when constructing each form
@@ -125,7 +137,7 @@ class RiseInline(admin.TabularInline):
 
 
 @admin.register(Entry)
-class EntryAdmin(admin.ModelAdmin):
+class EntryAdmin(ModelAdmin):
     inlines = [JiraEntryInline, RiseInline]
 
     def get_form(self, request, obj=None, **kwargs):
@@ -140,7 +152,3 @@ class EntryAdmin(admin.ModelAdmin):
             form.base_fields['date_created'].initial = timezone.now()
 
         return form
-
-
-admin.site.register(RiseEntry)
-admin.site.register(JiraEntry)

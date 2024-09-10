@@ -1,0 +1,31 @@
+services:
+  db:
+    restart: on-failure:10
+    image: postgres:16.3
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB_NAME: postgres
+      POSTGRES_DB_PORT: 5432
+      POSTGRES_DB_HOST: db
+    volumes:
+      - "timetracker-pg-volume:/var/lib/postgresql/data"
+    ports:
+      - "5432:5432"
+
+  web:
+    restart: on-failure:10
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ./scripts/run.sh
+    volumes:
+      - .:/app
+    ports:
+      - "8200:8200"
+    depends_on:
+      - db
+    env_file:
+      - env.dev
+
+volumes:
+  timetracker-pg-volume:

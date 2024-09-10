@@ -1,0 +1,5 @@
+django>=4.2,<5
+requests
+django-unfold
+psycopg2-binary
+pip-tools==6.13.0

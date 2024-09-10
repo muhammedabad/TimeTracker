@@ -2,3 +2,5 @@
 *.idea
 */local_settings.py
 __pycache__/
+env.dev
+static/
