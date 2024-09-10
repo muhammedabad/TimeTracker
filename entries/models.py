@@ -28,6 +28,16 @@ class JiraEntry(models.Model):
     def synced(self):
         return self.jira_entry_id is not None
 
+    def delete(self, *args, **kwargs):
+        # Custom code before deletion
+        from entries.services import JiraService
+        if self.jira_entry_id:
+            jira_service = JiraService()
+            jira_service.delete_entry(jira_entry=self)
+
+        # Proceed with the actual deletion
+        super().delete(*args, **kwargs)
+
     class Meta:
         unique_together = ('entry', 'jira_issue_number')
         verbose_name_plural = 'Jira Entries'
@@ -45,7 +55,6 @@ class RiseEntry(models.Model):
     rise_assignment_name = models.CharField(max_length=255)
     last_synced_at = models.DateTimeField(null=True)
     log_type = models.CharField(max_length=200, default=ASSIGNMENT)
-
 
     def delete(self, *args, **kwargs):
         # Custom code before deletion

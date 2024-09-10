@@ -7,7 +7,7 @@ from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextInputWidget
 
 from api_clients.rise import RiseApiClient
 from entries.models import Entry, JiraEntry, RiseEntry
-from entries.services import RiseAppService
+from entries.services import RiseAppService, JiraService
 from users.models import User
 
 
@@ -28,6 +28,22 @@ class JiraEntryForm(forms.ModelForm):
             self.fields["last_synced_at"] = forms.DateTimeField(
                 widget=UnfoldAdminTextInputWidget(attrs={"disabled": "disabled"}), required=False, initial="N/A")
 
+    def save(self, commit=True):
+        # Check if the specific field has changed
+        instance = super(JiraEntryForm, self).save(commit=commit)
+
+        if self.has_changed() and 'description' in self.changed_data or 'minutes_spent' in self.changed_data:
+            jira_client = JiraService()
+            if instance.jira_entry_id:
+                # Update the entry
+                jira_client.update_entry(jira_entry=instance)
+            else:
+                # Create the entry
+                jira_client.create_entry(jira_entry=instance)
+
+        return instance
+
+
     class Meta:
         model = JiraEntry
         exclude = ("jira_entry_id",)
@@ -36,6 +52,7 @@ class JiraEntryForm(forms.ModelForm):
 class JiraEntryInline(TabularInline):
     model = JiraEntry
     form = JiraEntryForm
+    can_delete = False
     extra = 0
 
 
@@ -187,3 +204,4 @@ class EntryAdmin(ModelAdmin):
 
 
 admin.site.register(RiseEntry, ModelAdmin)
+admin.site.register(JiraEntry, ModelAdmin)
