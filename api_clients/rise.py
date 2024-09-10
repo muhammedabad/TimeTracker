@@ -27,15 +27,11 @@ class RiseApiClient:
         choices = [("", "----------")]
         if response.ok:
             for assignment in response.json().get("tables", {}).get("assignments", []):
-                # assignment_start_date = assignment.get("start_date")
-                # assignment_end_date = assignment.get("end_date")
                 choices.append(
                     (assignment["id"], assignment["milestone"]["project"]["name"])
                 )
 
             for project in response.json().get("tables", {}).get("global_projects", []):
-                # project_start_date = assignment.get("start_date")
-                # project_end_date = assignment.get("end_date")
                 choices.append(
                     (project['id'], project["name"])
                 )
@@ -50,24 +46,56 @@ class RiseApiClient:
         user_assignment = None
 
         for assignment in response.json().get("tables", {}).get("assignments", []):
-            print(json.dumps(assignment))
             if str(assignment["id"]) == str(assignment_id):
                 user_assignment = assignment
 
         if not user_assignment:
             # Check global projects
             for project in response.json().get("tables", {}).get("global_projects", []):
-                # project_start_date = assignment.get("start_date")
-                # project_end_date = assignment.get("end_date")
-                print(project["id"], assignment_id)
                 if str(project["id"]) == str(assignment_id):
                     user_assignment = project
 
         return user_assignment
 
-
-
-
     def create_entry(self, rise_entry: RiseEntry) -> None:
-        pass
+        # Define base request info
+        url = f"{self.base_url}/employees/{rise_entry.entry.user.rise_user_id}/actions/log/"
+        data = {
+            "day": rise_entry.entry.date_created.isoformat(),
+            "hours": str(rise_entry.hours_worked),
+            "description": rise_entry.value
+        }
 
+        if rise_entry.log_type == RiseEntry.ASSIGNMENT:
+            data["assignment"] = rise_entry.rise_assignment_id
+        else:
+            data["project"] = rise_entry.rise_assignment_id
+
+        # Make the request
+        result = requests.post(url, headers=self.headers, json=data)
+
+        # Update local entry
+        if result.ok:
+            rise_entry.rise_entry_id = result.json()["id"]
+            rise_entry.last_synced_at = timezone.now()
+            rise_entry.save()
+
+    def update_entry(self, rise_entry: RiseEntry) -> None:
+        # Define base request info
+        url = f"{self.base_url}/timesheets/{rise_entry.rise_entry_id}/actions/edit_log/"
+        data = {
+            "hours_recorded": str(rise_entry.hours_worked),
+            "description": rise_entry.value
+        }
+
+        # Make the request
+        result = requests.post(url, headers=self.headers, json=data)
+
+        # Update local rise entry
+        if result.ok:
+            rise_entry.last_synced_at = timezone.now()
+            rise_entry.save()
+
+    def delete_entry(self, rise_entry: RiseEntry) -> None:
+        url = f"{self.base_url}/timesheets/{rise_entry.rise_entry_id}/actions/delete/"
+        requests.post(url, headers=self.headers, json={})

@@ -7,6 +7,7 @@ from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextInputWidget
 
 from api_clients.rise import RiseApiClient
 from entries.models import Entry, JiraEntry, RiseEntry
+from entries.services import RiseAppService
 from users.models import User
 
 
@@ -21,10 +22,10 @@ class JiraEntryForm(forms.ModelForm):
         if self.instance.pk:
             self.fields["jira_issue_number"] = forms.CharField(
                 widget=UnfoldAdminTextInputWidget(attrs={'readonly': 'readonly'}))
-            self.fields["last_synced_at"] = forms.DateField(
-                widget=UnfoldAdminTextInputWidget(attrs={'readonly': 'readonly'}))
+            self.fields["last_synced_at"] = forms.DateTimeField(
+                widget=UnfoldAdminTextInputWidget(attrs={'readonly': 'readonly'}), required=False)
         else:
-            self.fields["last_synced_at"] = forms.DateField(
+            self.fields["last_synced_at"] = forms.DateTimeField(
                 widget=UnfoldAdminTextInputWidget(attrs={"disabled": "disabled"}), required=False, initial="N/A")
 
     class Meta:
@@ -35,49 +36,53 @@ class JiraEntryForm(forms.ModelForm):
 class JiraEntryInline(TabularInline):
     model = JiraEntry
     form = JiraEntryForm
-    extra = 1
+    extra = 0
 
 
 class RiseInlineForm(forms.ModelForm):
-    # rise_assignment_id = forms.ChoiceField(choices=[], label="RiseApp Project")
+    rise_assignment_id = forms.ChoiceField(choices=[], label="RiseApp Project")
     rise_assignment_name = forms.CharField(widget=forms.HiddenInput(), required=False)
 
     class Meta:
         model = RiseEntry  # Your Rise model
-        # fields = '__all__'
-        exclude = ("rise_entry_name",)
+        exclude = ("rise_entry_id", "log_type",)
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         self.user = user
         super(RiseInlineForm, self).__init__(*args, **kwargs)
 
+        # Customize fields
+        self.fields["rise_assignment_id"].widget = UnfoldAdminSelectWidget()
         self.fields['rise_entry_id'] = forms.CharField(widget=forms.HiddenInput(), required=False)
 
-        # Fetch data from the 3rd party API using the user's email
+        # Set assignments to the current value in edit mode
         if self.instance.pk:
-            self.fields['rise_assignment_id'].initial = self.instance.rise_assignment_id
-            self.fields["rise_assignment_name"] = forms.ChoiceField(
-                widget=CustomUnfoldSelectWidget(attrs={"readonly": "readonly"}),
-                choices=[(self.instance.rise_assignment_id, self.instance.rise_assignment_name)],
-                label="RiseApp Project"
-            )
 
-            self.fields['rise_assignment_id'] = forms.CharField(widget=forms.HiddenInput())
-            self.fields["last_synced_at"] = forms.DateField(
-                widget=UnfoldAdminTextInputWidget(attrs={'readonly': 'readonly'}))
+            # Limit the assignment dropdown options to the current value
+            self.fields["rise_assignment_id"].choices = [
+                (self.instance.rise_assignment_id, self.instance.rise_assignment_name)
+            ]
+
+            self.fields['last_synced_at'] = forms.DateTimeField(
+                widget=UnfoldAdminTextInputWidget(attrs={"readonly": "readonly"}), required=False)
 
         else:
             if user:
-                api_choices = self.get_assignments()
-                self.fields['rise_assignment_id'].choices = api_choices
-                self.fields["last_synced_at"] = forms.DateField(widget=forms.TextInput(attrs={"disabled": "disabled"}),
-                                                                required=False, initial="-")
+                # Get user assignments
+                user_assignments = self.get_assignments()
+
+                # Set assignment choices
+                self.fields["rise_assignment_id"].choices = user_assignments
+
+                # Default sync date to an empty value as this is a new record
+                self.fields['last_synced_at'] = forms.DateTimeField(
+                    widget=UnfoldAdminTextInputWidget(attrs={"disabled": "disabled"}), required=False, initial="-")
 
     def get_assignments(self):
         # Get assignments for this user
-        rise_api_call = RiseApiClient(user=self.user)
-        return rise_api_call.get_assignments()
+        rise_client = RiseApiClient(user=self.user)
+        return rise_client.get_assignments()
 
     @staticmethod
     def get_single_assignment(user: User, assignment_id: int):
@@ -93,15 +98,29 @@ class RiseInlineForm(forms.ModelForm):
         if "is_global" in assignment_details:
             # This is a global project
             instance.rise_assignment_name = assignment_details["name"]
+            instance.log_type = RiseEntry.PROJECT
         else:
             instance.rise_assignment_name = assignment_details["milestone"]["project"]["name"]
+            instance.log_type = RiseEntry.ASSIGNMENT
 
+        # Set the ID of the assignment
         instance.rise_assignment_id = assignment_details["id"]
 
+        # Save the form instance
         if commit:
             instance.save()
 
-        return instance
+            # Check if the specific field has changed
+            if self.has_changed() and 'value' in self.changed_data or 'hours_worked' in self.changed_data:
+                rise_client = RiseAppService()
+                if instance.rise_entry_id:
+                    # Update the entry
+                    rise_client.update_entry(rise_entry=instance)
+                else:
+                    # Create the entry
+                    rise_client.create_entry(rise_entry=instance)
+
+                return instance
 
 
 class RiseInline(TabularInline):
@@ -140,6 +159,19 @@ class RiseInline(TabularInline):
 class EntryAdmin(ModelAdmin):
     inlines = [JiraEntryInline, RiseInline]
 
+    def get_queryset(self, request):
+        """
+        Return the queryset for the admin list view based on user permissions.
+        """
+        qs = super().get_queryset(request)
+
+        # Check if the user is a superuser
+        if not request.user.is_superuser:
+            # Filter the queryset to include only entries related to the logged-in user
+            qs = qs.filter(user=request.user)
+
+        return qs
+
     def get_form(self, request, obj=None, **kwargs):
         # Get the form from the superclass
         form = super().get_form(request, obj, **kwargs)
@@ -152,3 +184,6 @@ class EntryAdmin(ModelAdmin):
             form.base_fields['date_created'].initial = timezone.now()
 
         return form
+
+
+admin.site.register(RiseEntry, ModelAdmin)

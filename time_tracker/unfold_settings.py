@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 UNFOLD = {
     "SITE_TITLE": "Tangent Time Machine",
-    "SITE_HEADER": "Appears in sidebar at the top",
+    "SITE_HEADER": "Powered by Django :)",
     "SITE_URL": "/",
     # "SITE_ICON": lambda request: static("icon.svg"),  # both modes, optimise for 32px height
 
@@ -46,5 +46,5 @@ UNFOLD = {
     "SIDEBAR": {
         "show_search": False,  # Search in applications and models names
         "show_all_applications": False,  # Dropdown with all applications and models
-    }
+    },
 }

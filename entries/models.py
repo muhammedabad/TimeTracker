@@ -34,16 +34,35 @@ class JiraEntry(models.Model):
 
 
 class RiseEntry(models.Model):
+    ASSIGNMENT = 'assignment'
+    PROJECT = 'project'
+
     entry = models.OneToOneField(Entry, on_delete=models.PROTECT)
     value = models.TextField(help_text="")
+    hours_worked = models.DecimalField(max_digits=4, decimal_places=2, default=8.00)
     rise_entry_id = models.CharField(max_length=20)
     rise_assignment_id = models.CharField(max_length=20)
     rise_assignment_name = models.CharField(max_length=255)
     last_synced_at = models.DateTimeField(null=True)
+    log_type = models.CharField(max_length=200, default=ASSIGNMENT)
+
+
+    def delete(self, *args, **kwargs):
+        # Custom code before deletion
+        from entries.services import RiseAppService
+        if self.rise_entry_id:
+            rise_app_service = RiseAppService()
+            rise_app_service.delete_entry(rise_entry=self)
+
+        # Proceed with the actual deletion
+        super().delete(*args, **kwargs)
 
     @property
     def synced(self):
         return self.rise_entry_id is not None
+
+    def __str__(self):
+        return f'{self.entry.user.username.title()} - {self.entry.date_created}'
 
 
 
