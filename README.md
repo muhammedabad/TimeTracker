@@ -49,6 +49,7 @@ This app provides a single interface to capture your timesheets and sync them to
 - Feature Requests & Bug Fixes are always welcome! To get started, all you require is [Docker](https://docker.com)
 - Once you have cloned the project, create an `env.dev` file (template [here](https://github.com/muhammedabad/TimeTracker/blob/main/env.dev.sample) and simply run `make dup` to get started.
 - Other common operations related to Django & Docker can be found in the [Makefile](https://github.com/muhammedabad/TimeTracker/blob/main/Makefile)
+- For development purposes, you can safely override any settings by creating a `local_settings.py` in the `time_tracker` folder. This file will be ignored by the `gitignore` config.
 
 
 
