@@ -45,17 +45,17 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
         if request.user.is_superuser:
             return (
                 (None, {'fields': ('username', 'password')}),
-                ('Personal info',
-                 {'fields': ('email', 'first_name', 'last_name', 'rise_api_key', 'rise_user_id', 'jira_api_key')}),
+                ('Personal info', {'fields': ('email', 'first_name', 'last_name',)}),
                 ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'user_permissions', 'groups')}),
                 ('Important dates', {'fields': ('last_login', 'date_joined')}),
+                ('Integration Settings', {'fields': ('rise_api_key', 'rise_user_id', 'jira_url', 'jira_api_key',)}),
             )
         else:
             return (
                 (None, {'fields': ('username', 'password')}),
-                ('Personal info',
-                 {'fields': ('email', 'first_name', 'last_name', 'rise_api_key', 'rise_user_id', 'jira_api_key')}),
-                # ('Important dates', {'fields': ('last_login', 'date_joined')}),
+                ('Personal info', {'fields': ('email', 'first_name', 'last_name',)}),
+                ('Integration Settings', {'fields': ('rise_api_key', 'rise_user_id', 'jira_url', 'jira_api_key',)}),
+
             )
 
     def get_queryset(self, request):

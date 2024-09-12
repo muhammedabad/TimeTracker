@@ -203,5 +203,5 @@ class EntryAdmin(ModelAdmin):
         return form
 
 
-admin.site.register(RiseEntry, ModelAdmin)
-admin.site.register(JiraEntry, ModelAdmin)
+# admin.site.register(RiseEntry, ModelAdmin)
+# admin.site.register(JiraEntry, ModelAdmin)

@@ -7,6 +7,7 @@ class User(AbstractUser):
     rise_user_id = models.IntegerField(help_text="RiseApp User ID", blank=True, null=True)
     jira_email_address = models.EmailField(help_text="Jira Email Address", blank=True, null=True)
     jira_api_key = models.CharField(max_length=255, null=True, blank=True, help_text="Jira API Key")
+    jira_url = models.URLField(max_length=255, null=True, blank=True, help_text="e.g. https://testing.atlassian.net")
 
 
 
