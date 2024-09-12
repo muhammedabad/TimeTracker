@@ -41,7 +41,7 @@ This app provides a single interface to capture your timesheets and sync them to
 
 ### Known Issues / Limitations ###
 - Only one Rise entry can be captured per day
-- By default, Jira users cannot delete worklog entries. Should you need to remove this you may set the hours worked to 0 on the relevant entry.
+- By default, Jira users cannot delete worklog entries. Should you need to remove this you may set the hours worked to 0 on the relevant entry. Rise entries can be deleted.
 
 
 ### Contributing ###
