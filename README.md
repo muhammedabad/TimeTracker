@@ -16,7 +16,8 @@ This app provides a single interface to capture your timesheets and sync them to
 
 
 ### Usage ###
-- Once you've obtained your login credentials, go to the "Users" section and edit your profile to include your Integration Settings
+- If you are running this locally, just run `make createsuperuser` to create your user account and follow the prompts.
+- Once you've obtained your login credentials, go to the "Users" section and edit your profile to include your Integration Settings.
 
 ![image](https://github.com/user-attachments/assets/acfa28f6-4074-44ed-9a0b-ba4a318e6c5f)
 
