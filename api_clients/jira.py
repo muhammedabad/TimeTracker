@@ -3,12 +3,18 @@ from django.conf import settings
 from django.utils import timezone
 from requests.auth import HTTPBasicAuth
 
+from lib.utils import FernetCipher
+
 
 class JiraApiClient:
 
     def __init__(self, user):
-        self.base_url = settings.JIRA_API_URL
-        self.auth = HTTPBasicAuth(username=user.jira_email_address, password=user.jira_api_key)
+        self.base_url = user.jira_url
+
+        # Decrypt API key
+        api_key = FernetCipher().decrypt_value(user.jira_api_key)
+        self.auth = HTTPBasicAuth(username=user.jira_email_address, password=api_key)
+
         self.headers = {
           "Accept": "application/json",
           "Content-Type": "application/json"
@@ -77,8 +83,9 @@ class JiraApiClient:
             auth=self.auth
         )
 
-        jira_entry.last_synced_at = timezone.now()
-        jira_entry.save()
+        if response.ok:
+            jira_entry.last_synced_at = timezone.now()
+            jira_entry.save()
 
     def delete_entry(self, jira_entry):
         url = f"{self.base_url}/rest/api/3/issue/{jira_entry.jira_issue_number}/worklog/{jira_entry.jira_entry_id}"

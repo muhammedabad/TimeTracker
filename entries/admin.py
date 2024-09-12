@@ -17,6 +17,7 @@ class CustomUnfoldSelectWidget(UnfoldAdminSelectWidget):
 
 class JiraEntryForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super(JiraEntryForm, self).__init__(*args, **kwargs)
 
         if self.instance.pk:
@@ -27,6 +28,13 @@ class JiraEntryForm(forms.ModelForm):
         else:
             self.fields["last_synced_at"] = forms.DateTimeField(
                 widget=UnfoldAdminTextInputWidget(attrs={"disabled": "disabled"}), required=False, initial="N/A")
+
+    def clean(self):
+        cleaned_data = super(JiraEntryForm, self).clean()
+        if not all([self.user.jira_api_key, self.user.jira_email_address, self.user.jira_url]):
+            self.add_error('description', "Please check your JIRA config in your user settings.")
+
+        return cleaned_data
 
     def save(self, commit=True):
         # Check if the specific field has changed
@@ -43,7 +51,6 @@ class JiraEntryForm(forms.ModelForm):
 
         return instance
 
-
     class Meta:
         model = JiraEntry
         exclude = ("jira_entry_id",)
@@ -55,6 +62,26 @@ class JiraEntryInline(TabularInline):
     can_delete = False
     extra = 0
 
+    def get_formset(self, request, obj=None, **kwargs):
+        """
+        Override get_formset to pass user object into the formset's form initialization.
+        """
+        formset_class = super().get_formset(request, obj, **kwargs)
+
+        class CustomFormset(formset_class):
+            def __init__(self, *args, **kwargs):
+                # Inject the user's email into each form
+                self.user = request.user
+                super(CustomFormset, self).__init__(*args, **kwargs)
+                self.extra = 0  # Set to 0 to avoid extra empty forms
+
+            def _construct_form(self, i, **kwargs):
+                # Pass the user_email when constructing each form
+                kwargs['user'] = self.user
+                return super()._construct_form(i, **kwargs)
+
+        return CustomFormset
+
 
 class RiseInlineForm(forms.ModelForm):
     rise_assignment_id = forms.ChoiceField(choices=[], label="RiseApp Project")
@@ -63,6 +90,13 @@ class RiseInlineForm(forms.ModelForm):
     class Meta:
         model = RiseEntry  # Your Rise model
         exclude = ("rise_entry_id", "log_type",)
+
+    def clean(self):
+        cleaned_data = super(RiseInlineForm, self).clean()
+        if not self.user.rise_api_key:
+            self.add_error('value', "You need to add your Rise API key in your user settings.")
+
+        return cleaned_data
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
@@ -85,7 +119,7 @@ class RiseInlineForm(forms.ModelForm):
                 widget=UnfoldAdminTextInputWidget(attrs={"readonly": "readonly"}), required=False)
 
         else:
-            if user:
+            if user and self.user.rise_api_key:
                 # Get user assignments
                 user_assignments = self.get_assignments()
 
@@ -93,6 +127,12 @@ class RiseInlineForm(forms.ModelForm):
                 self.fields["rise_assignment_id"].choices = user_assignments
 
                 # Default sync date to an empty value as this is a new record
+                self.fields['last_synced_at'] = forms.DateTimeField(
+                    widget=UnfoldAdminTextInputWidget(attrs={"disabled": "disabled"}), required=False, initial="-")
+            else:
+                self.fields["value"] = forms.CharField(widget=UnfoldAdminTextInputWidget(
+                    attrs={"disabled": "disabled", "value": "Invalid Rise API key"}
+                ))
                 self.fields['last_synced_at'] = forms.DateTimeField(
                     widget=UnfoldAdminTextInputWidget(attrs={"disabled": "disabled"}), required=False, initial="-")
 

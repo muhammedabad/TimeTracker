@@ -5,6 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from entries.models import RiseEntry
+from lib.utils import FernetCipher
 from users.models import User
 
 
@@ -12,9 +13,13 @@ class RiseApiClient:
 
     def __init__(self, user: User) -> None:
         self.user = user
+
+        # Set auth by decrypting api key
+        api_key = FernetCipher().decrypt_value(self.user.rise_api_key)
         self.headers = {
-            "Authorization": f"Token {self.user.rise_api_key}",
+            "Authorization": f"Token {api_key}",
         }
+
         self.base_url = settings.RISE_API_URL
         self.start_date = timezone.now().date()
         self.end_date = timezone.now().date() + timezone.timedelta(days=7)
