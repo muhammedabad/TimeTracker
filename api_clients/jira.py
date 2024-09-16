@@ -38,7 +38,11 @@ class JiraApiClient:
             "type": "doc",
             "version": 1
           },
-          "started": timezone.now().strftime("%Y-%m-%dT%H:%M:%S.000%z"),
+          "started": timezone.now().replace(
+                year=jira_entry.entry.date_created.year,
+                month=jira_entry.entry.date_created.month,
+                day=jira_entry.entry.date_created.day,
+            ).strftime("%Y-%m-%dT%H:%M:%S.000%z"),
           "timeSpentSeconds": jira_entry.minutes_spent * 60,  # Convert to seconds
         }
 
@@ -72,7 +76,11 @@ class JiraApiClient:
                 "type": "doc",
                 "version": 1
             },
-            "started": timezone.now().strftime("%Y-%m-%dT%H:%M:%S.000%z"),
+            "started": timezone.now().replace(
+                year=jira_entry.entry.date_created.year,
+                month=jira_entry.entry.date_created.month,
+                day=jira_entry.entry.date_created.day,
+            ).strftime("%Y-%m-%dT%H:%M:%S.000%z"),
             "timeSpentSeconds": jira_entry.minutes_spent * 60,  # Convert to seconds
         }
 
