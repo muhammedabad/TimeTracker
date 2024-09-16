@@ -15,6 +15,24 @@ class Entry(models.Model):
     def __str__(self):
         return f'{self.user} - {self.date_created}'
 
+    @property
+    def total_jira_hours(self):
+        jira_entries = self.jiraentry_set.all()
+        total_minutes = 0
+
+        if not jira_entries:
+            return 0
+
+        for jira_entry in jira_entries:
+            total_minutes += jira_entry.minutes_spent
+
+        return round(total_minutes / 60, 2)
+
+    @property
+    def total_rise_hours(self):
+        if self.riseentry:
+            return self.riseentry.hours_worked
+
 
 class JiraEntry(models.Model):
     entry = models.ForeignKey(Entry, on_delete=models.PROTECT)

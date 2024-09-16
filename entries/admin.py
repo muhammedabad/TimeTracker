@@ -215,6 +215,7 @@ class RiseInline(TabularInline):
 @admin.register(Entry)
 class EntryAdmin(ModelAdmin):
     inlines = [JiraEntryInline, RiseInline]
+    list_display = ["user", "date_created", "total_jira_hours", "total_rise_hours"]
 
     def get_queryset(self, request):
         """
