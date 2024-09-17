@@ -11,7 +11,17 @@ This app provides a single interface to capture your timesheets and sync them to
 
 
 ### Requirements ###
-- RiseApp: Your personal API key and User ID. 
+- RiseApp: Your personal API key and User ID. To obtain these, log in to Rise and click on the code block next to your name on the right hand side:
+  
+    ![image](https://github.com/user-attachments/assets/0839a0b0-c508-4cf1-aa8f-51ce3bca5d31)
+
+ 
+
+  A pop-up window will appear and display your user ID and API key - in the example below `123` is the user ID and `mysecretoken` is the API key:
+
+   ![image](https://github.com/user-attachments/assets/fe052699-a35d-4a03-8b45-c74fa090b8e0)
+
+
 - Jira: Your instance URL (e.g. test.atlassian.net) and your API key. You can generate an API key [here](https://id.atlassian.com/manage-profile/security/api-tokens).
 
 
