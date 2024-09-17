@@ -9,6 +9,9 @@ class User(AbstractUser):
     jira_api_key = models.TextField(null=True, blank=True, help_text="Jira API Key")
     jira_url = models.URLField(max_length=255, null=True, blank=True, help_text="e.g. https://testing.atlassian.net")
 
+    class Meta:
+        verbose_name = "User Account"
+
 
 
 

@@ -9,7 +9,8 @@ class Entry(models.Model):
 
     class Meta:
         unique_together = ('user', 'date_created')
-        verbose_name_plural = 'Entries'
+        verbose_name = "Timesheet Entry"
+        verbose_name_plural = 'Timesheet Entries'
         ordering = ['-date_created']
 
     def __str__(self):
