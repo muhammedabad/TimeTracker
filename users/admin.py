@@ -87,21 +87,23 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
         """
         Return the fieldsets to use in the admin form.
         """
-        if request.user.is_superuser:
-            return (
-                (None, {'fields': ('username', 'password')}),
-                ('Personal info', {'fields': ('email', 'first_name', 'last_name',)}),
-                ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'user_permissions', 'groups')}),
-                ('Important dates', {'fields': ('last_login', 'date_joined')}),
-                ('Integration Settings', {'fields': ('rise_api_key', 'rise_user_id', 'jira_url', 'jira_email_address', 'jira_api_key',)}),
-            )
-        else:
-            return (
-                (None, {'fields': ('username', 'password')}),
-                ('Personal info', {'fields': ('email', 'first_name', 'last_name',)}),
-                ('Integration Settings', {'fields': ('rise_api_key', 'rise_user_id', 'jira_url', 'jira_email_address', 'jira_api_key',)}),
+        if obj:
+            if request.user.is_superuser:
+                return (
+                    (None, {'fields': ('username', 'password')}),
+                    ('Personal info', {'fields': ('email', 'first_name', 'last_name',)}),
+                    ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'user_permissions', 'groups')}),
+                    ('Important dates', {'fields': ('last_login', 'date_joined')}),
+                    ('Integration Settings', {'fields': ('rise_api_key', 'rise_user_id', 'jira_url', 'jira_email_address', 'jira_api_key',)}),
+                )
+            else:
+                return (
+                    (None, {'fields': ('username', 'password')}),
+                    ('Personal info', {'fields': ('email', 'first_name', 'last_name',)}),
+                    ('Integration Settings', {'fields': ('rise_api_key', 'rise_user_id', 'jira_url', 'jira_email_address', 'jira_api_key',)}),
 
-            )
+                )
+        return super().get_fieldsets(request, obj)
 
     def get_queryset(self, request):
         """
