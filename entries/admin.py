@@ -1,8 +1,16 @@
+from typing import List, Tuple, Dict, Any
+
 from django import forms
 from django.contrib import admin
+from django.contrib.admin.views.main import ChangeList
+from django.core.exceptions import ValidationError
+from django.core.validators import EMPTY_VALUES
+from django.db.models import QuerySet
+from django.http import HttpRequest
 from django.utils import timezone
 from unfold.admin import ModelAdmin
 from unfold.admin import TabularInline
+from unfold.contrib.filters.admin import RangeDateFilter
 from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextInputWidget
 
 from api_clients.rise import RiseApiClient
@@ -212,10 +220,73 @@ class RiseInline(TabularInline):
         return CustomFormset
 
 
+class CustomRangeDateFilter(RangeDateFilter):
+    def queryset(self, request: HttpRequest, queryset: QuerySet) -> QuerySet | None:
+        filters = {}
+
+        value_from = self.used_parameters.get(self.parameter_name + "_from", None)
+        if value_from not in EMPTY_VALUES:
+            filters.update(
+                {
+                    self.parameter_name
+                    + "__gte": self.used_parameters.get(
+                        self.parameter_name + "_from", None
+                    ),
+                }
+            )
+
+        value_to = self.used_parameters.get(self.parameter_name + "_to", None)
+        if value_to not in EMPTY_VALUES:
+            filters.update(
+                {
+                    self.parameter_name
+                    + "__lte": self.used_parameters.get(
+                        self.parameter_name + "_to", None
+                    ),
+                }
+            )
+
+        try:
+            return queryset.filter(**filters)
+        except (ValueError, ValidationError):
+            return None
+
+    def expected_parameters(self) -> List[str]:
+        return [
+            f"{self.parameter_name}_from",
+            f"{self.parameter_name}_to",
+        ]
+
+    def choices(self, changelist: ChangeList) -> Tuple[Dict[str, Any], ...]:
+        return (
+            {
+                "request": self.request,
+                "parameter_name": self.parameter_name,
+                "form": self.form_class(
+                    name=self.parameter_name,
+                    data={
+                        self.parameter_name
+                        + "_from": self.used_parameters.get(
+                            self.parameter_name + "_from", None
+                        ),
+                        self.parameter_name
+                        + "_to": self.used_parameters.get(
+                            self.parameter_name + "_to", None
+                        ),
+                    },
+                ),
+            },
+        )
+
+
 @admin.register(Entry)
 class EntryAdmin(ModelAdmin):
     inlines = [JiraEntryInline, RiseInline]
     list_display = ["user", "date_created", "total_jira_hours", "total_rise_hours"]
+    list_filter_submit = True  # Submit button at the bottom of the filter
+    list_filter = (
+        ("date_created", CustomRangeDateFilter),
+    )
 
     def get_queryset(self, request):
         """
