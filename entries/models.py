@@ -57,6 +57,9 @@ class JiraEntry(models.Model):
         # Proceed with the actual deletion
         super().delete(*args, **kwargs)
 
+    def __str__(self):
+        return f'Jira Worklog | {self.entry.user.get_full_name()} | {self.entry.date_created}'
+
     class Meta:
         unique_together = ('entry', 'jira_issue_number')
         verbose_name_plural = 'Jira Entries'
@@ -90,7 +93,7 @@ class RiseEntry(models.Model):
         return self.rise_entry_id is not None
 
     def __str__(self):
-        return f'{self.entry.user.username.title()} - {self.entry.date_created}'
+        return f'Rise Timesheet Entry | {self.entry.user.get_full_name()} | {self.entry.date_created}'
 
 
 
