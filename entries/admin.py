@@ -35,7 +35,7 @@ class JiraEntryForm(forms.ModelForm):
                 widget=UnfoldAdminTextInputWidget(attrs={'readonly': 'readonly'}), required=False)
         else:
             self.fields["last_synced_at"] = forms.DateTimeField(
-                widget=UnfoldAdminTextInputWidget(attrs={"disabled": "disabled"}), required=False, initial="N/A")
+                widget=UnfoldAdminTextInputWidget(attrs={"disabled": "disabled"}), required=False, initial="-")
 
     def clean(self):
         cleaned_data = super(JiraEntryForm, self).clean()

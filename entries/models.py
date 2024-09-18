@@ -14,7 +14,7 @@ class Entry(models.Model):
         ordering = ['-date_created']
 
     def __str__(self):
-        return f'{self.user} - {self.date_created}'
+        return f'{self.user} | {self.date_created}'
 
     @property
     def total_jira_hours(self):
