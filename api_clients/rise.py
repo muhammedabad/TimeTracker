@@ -29,7 +29,7 @@ class RiseApiClient:
         url = f"{self.base_url}/employees/dashboards/me/?from_date={self.start_date}&to_date={self.end_date}"
         response = requests.get(url, headers=self.headers)
 
-        choices = [("", "----------")]
+        choices = [("", "Select A Project")]
         if response.ok:
             for assignment in response.json().get("tables", {}).get("assignments", []):
                 choices.append(

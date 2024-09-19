@@ -12,10 +12,9 @@ UNFOLD = {
     "SHOW_VIEW_ON_SITE": True, # show/hide "View on site" button, default: True
 
     # "THEME": "dark", # Force theme: "dark" or "light". Will disable theme switcher
-    # "LOGIN": {
-    #     "image": lambda request: static("sample/login-bg.jpg"),
-    #     "redirect_after": lambda request: reverse_lazy("admin:APP_MODEL_changelist"),
-    # },
+    "LOGIN": {
+        "image": lambda request: static("img/banner/home-banner.jpg"),
+    },
     "STYLES": [
         lambda request: static("css/unfold.custom.css"),
     ],
