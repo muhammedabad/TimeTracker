@@ -5,7 +5,7 @@ from django.conf import settings
 from django.utils import timezone
 
 from entries.models import RiseEntry
-from lib.utils import FernetCipher
+from lib.utils import FernetCipher, format_date
 from users.models import User
 
 
@@ -33,12 +33,12 @@ class RiseApiClient:
         if response.ok:
             for assignment in response.json().get("tables", {}).get("assignments", []):
                 choices.append(
-                    (assignment["id"], assignment["milestone"]["project"]["name"])
+                    (assignment["id"], f'{assignment["milestone"]["project"]["name"]} ({format_date(assignment["milestone"]["start_date"])} -  {format_date(assignment["milestone"]["end_date"])})')
                 )
 
             for project in response.json().get("tables", {}).get("global_projects", []):
                 choices.append(
-                    (project['id'], project["name"])
+                    (project['id'], f'{project["name"]} ({format_date(project["start_date"])} -  {format_date(project["end_date"])})')
                 )
 
             return choices

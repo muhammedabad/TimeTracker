@@ -16,6 +16,7 @@ from unfold.widgets import UnfoldAdminSelectWidget, UnfoldAdminTextInputWidget
 from api_clients.rise import RiseApiClient
 from entries.models import Entry, JiraEntry, RiseEntry
 from entries.services import RiseAppService, JiraService
+from lib.utils import format_date
 from users.models import User
 
 
@@ -104,6 +105,18 @@ class RiseInlineForm(forms.ModelForm):
         if not self.user.rise_api_key:
             self.add_error('value', "You need to add your Rise API key in your user settings.")
 
+        if cleaned_data.get("rise_assignment_id"):
+            # Get the entry date and rise assignment
+            entry_date = cleaned_data.get("entry").date_created
+            rise_assignment = self.get_single_assignment(user=cleaned_data.get("entry").user, assignment_id=cleaned_data.get("rise_assignment_id"))
+
+            # Get assignment start and end dates
+            assignment_start_date = timezone.datetime.strptime(rise_assignment["start_date"],"%Y-%m-%d").date()
+            assignment_end_date = timezone.datetime.strptime(rise_assignment["end_date"],"%Y-%m-%d").date()
+
+            if entry_date < assignment_start_date or entry_date > assignment_end_date:
+                self.add_error('rise_assignment_id', 'Please select a project within the correct date range')
+
         return cleaned_data
 
     def __init__(self, *args, **kwargs):
@@ -119,8 +132,9 @@ class RiseInlineForm(forms.ModelForm):
         if self.instance.pk:
 
             # Limit the assignment dropdown options to the current value
+            assignment_details = self.get_single_assignment(user=self.instance.entry.user, assignment_id=self.instance.rise_assignment_id)
             self.fields["rise_assignment_id"].choices = [
-                (self.instance.rise_assignment_id, self.instance.rise_assignment_name)
+                (self.instance.rise_assignment_id, f'{self.instance.rise_assignment_name} ({format_date(assignment_details["start_date"])} - {format_date(assignment_details["end_date"])})')
             ]
 
             self.fields['last_synced_at'] = forms.DateTimeField(
