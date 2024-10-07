@@ -25,7 +25,6 @@ class RiseApiClient:
         self.end_date = timezone.now().date() + timezone.timedelta(days=7)
 
     def get_assignments(self) -> list or None:
-
         url = f"{self.base_url}/employees/dashboards/me/?from_date={self.start_date}&to_date={self.end_date}"
         response = requests.get(url, headers=self.headers)
 
@@ -45,8 +44,9 @@ class RiseApiClient:
 
         return None
 
-    def get_single_assignment(self, assignment_id: int) -> dict:
-        url = f"{self.base_url}/employees/dashboards/me/?from_date={self.start_date}&to_date={self.end_date}"
+    def get_single_assignment(self, assignment_id: int, start_date: timezone.datetime.date) -> dict:
+        start_date = start_date or self.start_date
+        url = f"{self.base_url}/employees/dashboards/me/?from_date={start_date}&to_date={self.end_date}"
         response = requests.get(url, headers=self.headers)
         user_assignment = None
 

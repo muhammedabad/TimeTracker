@@ -163,11 +163,13 @@ class RiseInlineForm(forms.ModelForm):
         rise_client = RiseApiClient(user=self.user)
         return rise_client.get_assignments()
 
-    @staticmethod
-    def get_single_assignment(user: User, assignment_id: int):
+    def get_single_assignment(self, user: User, assignment_id: int):
         # Get the details for a single assignment
         rise_api_call = RiseApiClient(user=user)
-        return rise_api_call.get_single_assignment(assignment_id=assignment_id)
+        start_date = None
+        if hasattr(self.instance, "entry"):
+            start_date = self.instance.entry.date_created
+        return rise_api_call.get_single_assignment(assignment_id=assignment_id, start_date=start_date)
 
     def save(self, commit=True):
 
